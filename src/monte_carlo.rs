@@ -1,4 +1,5 @@
 use plotters::prelude::*;
+use plotters::prelude::full_palette::GREEN_A700;
 use rand::prelude::*;
 use rand::distributions::{Distribution, Uniform};
 use rand_pcg::Pcg64Mcg;
@@ -45,11 +46,15 @@ impl MonteCarlo {
     }
 
 
-    pub(crate) fn get_data(&mut self, sample_number: usize) -> [(f64, f64); COUNT] {
-        let mut data = [(sample_number as f64, 0.0); COUNT];
+    pub(crate) fn get_data(&mut self, sample_number: usize) -> [(f64, f64); COUNT + 1] {
+        let mut avg = 0.0;
+        let mut data = [(sample_number as f64, 0.0); COUNT + 1];
         for i in 0..50 {
             data[i].1 = self.integrate(sample_number);
+            avg += data[i].1;
         }
+        avg /= COUNT as f64;
+        data[COUNT].1 = avg;
         return data;
     }
 
@@ -75,14 +80,16 @@ impl MonteCarlo {
         ctx.configure_mesh().draw().unwrap();
 
 
-
         for i in intrange.clone() {
-            ctx.draw_series(self.get_data(i).iter().map(|point| Circle::new(*point, 2, Into::<ShapeStyle>::into(&RED).filled()).into_dyn()))
+            let data = self.get_data(i);
+            ctx.draw_series(data[0..COUNT-1].iter().map(|point| Circle::new(*point, 2, Into::<ShapeStyle>::into(&RED).filled()).into_dyn()))
+                .unwrap();
+            ctx.draw_series(data[COUNT.. COUNT +1].iter().map(|point| Circle::new(*point, 3, Into::<ShapeStyle>::into(&BLUE).filled()).into_dyn()))
                 .unwrap();
         }
 
         ctx.draw_series(
-            LineSeries::new(intrange.clone().map(|x| (x as f64, integral_val)), &BLUE),
+            LineSeries::new(intrange.clone().map(|x| (x as f64, integral_val)), &GREEN_A700),
         ).unwrap();
     }
 }
